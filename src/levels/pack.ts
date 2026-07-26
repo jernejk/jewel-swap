@@ -134,6 +134,47 @@ export const PACK: readonly ArtSpec[] = [
       '...dddd...',
     ],
   },
+  {
+    id: 'carrot',
+    name: 'Carrot',
+    // skewed: g 54% leafy top dominant, o 44% root, d 1 cell root-tip accent.
+    colours: { o: '#ff8a1e', g: '#4caf50', d: '#8a3a0a' },
+    rows: [
+      'g.g.g.g.g',
+      '.ggggggg.',
+      'g.ggggg.g',
+      '.ggggggg.',
+      '..ggggg..',
+      '...ooo...',
+      '..ooooo..',
+      '..ooooo..',
+      '..ooooo..',
+      '...ooo...',
+      '...ooo...',
+      '....o....',
+      '....d....',
+    ],
+  },
+  {
+    id: 'candy',
+    name: 'Candy',
+    // balanced: r 36% / w 35% / y 26% swirl, t 3 cells stick.
+    colours: { r: '#d93a30', w: '#fdfdf6', y: '#ffd23f', t: '#6b4423' },
+    rows: [
+      '..rrrrww..',
+      '.rrwwwwyy.',
+      'rrwwyyyyyw',
+      'rwyyyyrrrw',
+      'wwyyrrrrww',
+      'wyyrrrrwww',
+      'wyyyrwwwwr',
+      '.yyywwrrr.',
+      '..wwrrrr..',
+      '....t.....',
+      '....t.....',
+      '....t.....',
+    ],
+  },
 
   // ============================== medium (14-16 wide) ==============================
   {
@@ -255,6 +296,50 @@ export const PACK: readonly ArtSpec[] = [
       '..bb.dd.dd.bb..',
     ],
   },
+  {
+    id: 'penguin',
+    name: 'Penguin',
+    // skewed: k 54% body dominant, w 32% belly, o 7% / c 5% feet & ice, p 2 cells blush.
+    colours: { k: '#1a1410', w: '#fdfdf6', o: '#ff8a1e', c: '#3fc7f4', p: '#ff8bab' },
+    rows: [
+      '....kkkkkk....',
+      '...kkkkkkkk...',
+      '..kkwwwwwwkk..',
+      '..kwpwwwwpwk..',
+      '..kwwwoowwwk..',
+      '..kkwwwwwwkk..',
+      '.kkkkwwwwkkkk.',
+      'kkkkkkwwkkkkkk',
+      'kkkkkkwwkkkkkk',
+      'ckkkkwwwwkkkkc',
+      'cckkwwwwwwkkcc',
+      '.ckkwwwwwwkkc.',
+      '..kk.oooo.kk..',
+      '...k.oooo.k...',
+    ],
+  },
+  {
+    id: 'cupcake',
+    name: 'Cupcake',
+    // skewed: f 50% frosting dominant, a 23% / b 23% wrapper, s 5 cells sprinkles, r 1 cell cherry.
+    colours: { a: '#ff6b9d', b: '#fdfdf6', f: '#c98a4a', s: '#3fc7f4', r: '#d9302c' },
+    rows: [
+      '......r.......',
+      '.....fff......',
+      '....fffff.....',
+      '...fffsffff...',
+      '..ffffffffff..',
+      '..fsffffffsf..',
+      '.ffffffffffff.',
+      '.fffsfffsffff.',
+      'ffffffffffffff',
+      'ababababababab',
+      'bababababababa',
+      'ababababababab',
+      '.babababababa.',
+      '...abababab...',
+    ],
+  },
 
   // ============================== large (18-20 wide) ==============================
   {
@@ -341,6 +426,28 @@ export const PACK: readonly ArtSpec[] = [
       'rowwwwwwwwwwwwwwwwr',
     ],
   },
+  {
+    id: 'turtle',
+    name: 'Turtle',
+    // balanced-leaning: b 40% / e 29% / c 17% shell majors, k 6% / m 6% / y 2 cells accents.
+    colours: { e: '#1f5c24', m: '#a8c930', b: '#2fa88a', k: '#2b2b2b', c: '#f5e6c8', y: '#ff8a1e' },
+    rows: [
+      '.......bb..bb.......',
+      '......bkkbbkkb......',
+      '.....b.kb..bk.b.....',
+      '...bb..........bb...',
+      '....b..eeeee..b.....',
+      '...b...ememe...b....',
+      'b....eeeee....b.....',
+      '...b...ememe...b....',
+      '....b..eeeee..b.....',
+      '...b...ememe...b....',
+      '....b..eeeee..b.....',
+      '...bccccccccccbb....',
+      '....bcccyyccccb.....',
+      '.....bbb....bb......',
+    ],
+  },
 
   // ============================== extra-large (22-24 wide) ==============================
   {
@@ -404,6 +511,38 @@ export const PACK: readonly ArtSpec[] = [
       'gfgkkbgggffggbbggfgbbbgg',
       'bfgkbbgkkfgkkbbkkfgkbbbb',
       'bffgbbgkkfgkkbbkkffgbbbb',
+    ],
+  },
+  {
+    id: 'castle',
+    name: 'Castle',
+    // skewed: s 54% stone wall dominant, w 19% windows, r 11% / p 8% / d 7% roofs & door, m/f tiny accents.
+    colours: {
+      s: '#8a8a94',
+      r: '#3f6fd9',
+      p: '#8a3fa0',
+      d: '#6b4423',
+      w: '#ffd23f',
+      f: '#d93a30',
+      m: '#eef2f5',
+    },
+    rows: [
+      '..m................f..',
+      '..................f...',
+      '.......r......r.......',
+      '..pr..............rp..',
+      '..pprr..........rrpp..',
+      '..sspprr......rrppss..',
+      'ssssssss......ssssssss',
+      'sswwsswwsswwsswwsswwss',
+      'ssssrrrrrrrrrrrrrrssss',
+      'sswwsswwsswwsswwsswwss',
+      'sswwsswwsswwsswwsswwss',
+      'sswwwwsspppppsswwwwsss',
+      'sswwwwsspppppsswwwwsss',
+      'ssssssssddddddssssssss',
+      'ssssssssddddddssssssss',
+      'ssssssssddddddssssssss',
     ],
   },
 ];
