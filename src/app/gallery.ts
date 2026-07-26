@@ -4,6 +4,9 @@ import { isComplete, type Save } from './store';
 
 const THUMB = 132;
 
+/** Named difficulty bands. Dots alone made the reader decode an unlabelled scale. */
+const BANDS = ['Gentle', 'Easy', 'Medium', 'Hard', 'Tough'] as const;
+
 /**
  * The picture is the reward, so the gallery only shows it in colour once you
  * have finished it. Unsolved levels appear as a flat silhouette: enough to see
@@ -136,13 +139,18 @@ export class Gallery {
       const meta = document.createElement('span');
       meta.className = 'tile-meta';
       const stars = this.stars.get(level.id) ?? 3;
-      meta.textContent = `${'●'.repeat(stars)}${'○'.repeat(5 - stars)} · ${level.width}×${level.height} · ${colours}`;
+      meta.textContent = `${BANDS[stars - 1]} · ${level.width}×${level.height} · ${colours} colours`;
       tile.append(meta);
 
-      const status = document.createElement('span');
-      status.className = 'tile-best';
-      status.textContent = revealed ? `best ${best?.moves} moves` : 'unsolved';
-      tile.append(status);
+      // "unsolved" was redundant — every unfinished card is already a grey
+      // silhouette and the header counts them. Only say something when there
+      // is something to say.
+      if (revealed) {
+        const status = document.createElement('span');
+        status.className = 'tile-best';
+        status.textContent = `best ${best?.moves} moves`;
+        tile.append(status);
+      }
 
       this.grid.append(tile);
     }

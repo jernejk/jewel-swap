@@ -485,10 +485,28 @@ export class Renderer {
       this.ctx.fill();
 
       if (jewel == null) {
+        // A recess, not a tile. A single dark band across the top read as a
+        // brick — the cell looked disabled rather than open, which is bad for
+        // the one state the whole move grammar depends on. An inset rim on all
+        // four sides plus a darkened centre says "hole" instead.
         this.ctx.save();
         this.ctx.clip();
-        this.ctx.fillStyle = 'rgba(0,0,0,0.22)';
-        this.ctx.fillRect(x, y, cell, cell * 0.28);
+        const inner = this.ctx.createRadialGradient(
+          x + cell / 2,
+          y + cell / 2,
+          cell * 0.08,
+          x + cell / 2,
+          y + cell / 2,
+          cell * 0.55,
+        );
+        inner.addColorStop(0, 'rgba(0,0,0,0.5)');
+        inner.addColorStop(1, 'rgba(0,0,0,0.12)');
+        this.ctx.fillStyle = inner;
+        this.ctx.fillRect(x, y, cell, cell);
+        this.ctx.strokeStyle = 'rgba(0,0,0,0.42)';
+        this.ctx.lineWidth = Math.max(1, cell * 0.09);
+        this.roundRect(x + gap / 2, y + gap / 2, cell - gap, cell - gap, cell * 0.22);
+        this.ctx.stroke();
         this.ctx.restore();
         if (this.symbols === 'on') this.drawGlyph(x + cell / 2, y + cell / 2, cell * 0.4, target, 0.45);
       } else {

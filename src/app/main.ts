@@ -338,13 +338,14 @@ class Game {
     const title = document.getElementById('title');
     if (title) title.textContent = level.name;
 
-    const remaining = level.target.reduce<number>(
-      (n, t, i) => (t != null && this.state.jewels[i] !== t ? n + 1 : n),
-      0,
-    );
+    // Colours solved, not jewels remaining. Finishing a colour is the only
+    // thing the game actually rewards — it is what grows the shelf — so that is
+    // the number worth showing. "N left" also invited the reading that shelving
+    // a jewel was progress, which it is not.
+    const palette = new Set(level.target.filter((t) => t != null));
     const stats = document.getElementById('stats');
     if (stats) {
-      stats.textContent = `${remaining} left · shelf ${this.state.shelf.length}/${this.state.capacity} · ${this.state.moves} moves`;
+      stats.textContent = `${this.state.completedColours.length}/${palette.size} colours solved`;
     }
 
     (document.getElementById('undo') as HTMLButtonElement).disabled = this.history.length === 0;
