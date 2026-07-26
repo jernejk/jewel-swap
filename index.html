@@ -104,6 +104,48 @@
       #card h2 { margin: 0 0 6px; font-size: 25px; }
       #card p { margin: 0 0 18px; color: var(--muted); font-size: 14px; }
       #card .row { display: flex; gap: 8px; justify-content: center; }
+      #gallery {
+        position: fixed;
+        inset: 0;
+        display: none;
+        flex-direction: column;
+        background: #171528;
+        z-index: 20;
+        padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+      }
+      #gallery.show { display: flex; }
+      #gallery header { padding: 14px 16px 8px; gap: 10px; }
+      #gallery h2 { margin: 0; font-size: 17px; font-weight: 650; }
+      #gallery-summary { color: var(--muted); font-size: 13px; margin-left: auto; }
+      #gallery-grid {
+        flex: 1 1 auto;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 12px;
+        padding: 8px 14px 20px;
+        align-content: start;
+      }
+      .tile {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 3px;
+        padding: 12px 8px 10px;
+        min-height: 0;
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.09);
+      }
+      .tile canvas { border-radius: 8px; }
+      .tile.done { background: rgba(123, 224, 192, 0.09); border-color: rgba(123, 224, 192, 0.3); }
+      .tile.current { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+      .tile-name { font-size: 13px; font-weight: 600; margin-top: 6px; }
+      .tile-meta { font-size: 11px; color: var(--muted); letter-spacing: 0.04em; }
+      .tile-best { font-size: 11px; color: var(--muted); }
+      .tile.done .tile-best { color: var(--accent); }
+      #gallery-close { margin: 0 14px 12px; }
       @media (prefers-reduced-motion: reduce) {
         * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
       }
@@ -120,8 +162,16 @@
       <button id="hint" title="Show a move that leads to a win">Hint</button>
       <button id="restart" title="Start this picture again">Restart</button>
       <button id="symbols" aria-pressed="false" title="Show a distinct shape on each colour">Shapes</button>
-      <button id="next" title="Next picture">Next</button>
+      <button id="gallery-open" title="All pictures">Gallery</button>
     </footer>
+    <div id="gallery" role="dialog" aria-modal="true" aria-label="Picture gallery">
+      <header>
+        <h2>Gallery</h2>
+        <span id="gallery-summary"></span>
+      </header>
+      <div id="gallery-grid"></div>
+      <button id="gallery-close">Back to the puzzle</button>
+    </div>
     <div id="overlay" role="dialog" aria-modal="true">
       <div id="card">
         <h2 id="win-title">Complete</h2>
@@ -129,6 +179,7 @@
         <div class="row">
           <button id="win-again">Replay</button>
           <button id="win-next">Next picture</button>
+          <button id="win-gallery">Gallery</button>
         </div>
       </div>
     </div>

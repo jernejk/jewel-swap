@@ -13,48 +13,27 @@ import { LEVELS } from '../levels';
 import { Sfx } from '../render/audio';
 import { Renderer } from '../render/renderer';
 import { findHint } from '../solver/solver';
-
-const STORE_KEY = 'jewel-swap:v1';
+import { Gallery } from './gallery';
+import { isComplete, load, recordWin, save, type Save } from './store';
 
 /** The cell an action points at, for shake feedback and hint highlighting. */
 function anchorCell(action: Action): number {
   return action.type === 'move' ? action.from : action.cell;
 }
 
-interface Persisted {
-  levelIndex: number;
-  symbols: boolean;
-  sound: boolean;
-}
-
-function load(): Persisted {
-  try {
-    const raw = localStorage.getItem(STORE_KEY);
-    if (raw) return { levelIndex: 0, symbols: false, sound: true, ...JSON.parse(raw) };
-  } catch {
-    /* private mode, corrupt value — defaults are fine */
-  }
-  return { levelIndex: 0, symbols: false, sound: true };
-}
-
-function save(p: Persisted): void {
-  try {
-    localStorage.setItem(STORE_KEY, JSON.stringify(p));
-  } catch {
-    /* nothing we can do, and nothing that matters */
-  }
-}
-
 class Game {
   private canvas = document.getElementById('canvas') as HTMLCanvasElement;
   private renderer: Renderer;
   private sfx = new Sfx();
-  private prefs = load();
+  private prefs: Save = load();
+  private gallery!: Gallery;
   private generated: GeneratedLevel;
   private state: GameState;
   private history: GameState[] = [];
   private levelIndex: number;
   private seed = 1;
+  /** A win fires from refresh(), which runs on every action — record it once. */
+  private recorded = false;
   private selection: {
     cells: ReadonlySet<number>;
     colour: number;
@@ -63,7 +42,8 @@ class Game {
   } | null = null;
 
   constructor() {
-    this.levelIndex = Math.min(this.prefs.levelIndex, LEVELS.length - 1);
+    const saved = LEVELS.findIndex((l) => l.id === this.prefs.levelId);
+    this.levelIndex = saved >= 0 ? saved : this.firstUnsolvedIndex();
     this.generated = this.build(this.levelIndex, this.seed);
     this.state = stateFrom(this.generated);
     this.renderer = new Renderer(this.canvas, this.state, {
@@ -79,6 +59,17 @@ class Game {
       },
     });
     this.renderer.symbols = this.prefs.symbols ? 'on' : 'off';
+    this.gallery = new Gallery({
+      levels: LEVELS,
+      onPick: (id) => {
+        const index = LEVELS.findIndex((l) => l.id === id);
+        if (index >= 0) {
+          this.gallery.hide();
+          this.loadLevel(index, this.seed);
+        }
+      },
+      onClose: () => this.gallery.hide(),
+    });
     this.wire();
     this.refresh();
     requestAnimationFrame(this.frame);
@@ -98,12 +89,17 @@ class Game {
       });
     };
 
+    on('gallery-open', () => this.gallery.show(this.prefs, this.currentLevel.id));
     on('undo', () => this.undo());
     on('hint', () => this.hint());
     on('restart', () => this.restart());
     on('next', () => this.nextLevel());
     on('win-again', () => this.restart());
     on('win-next', () => this.nextLevel());
+    on('win-gallery', () => {
+      this.hideOverlay();
+      this.gallery.show(this.prefs, this.currentLevel.id);
+    });
     on('symbols', () => {
       this.prefs.symbols = !this.prefs.symbols;
       this.renderer.symbols = this.prefs.symbols ? 'on' : 'off';
@@ -287,6 +283,7 @@ class Game {
   }
 
   private restart(): void {
+    this.recorded = false;
     this.state = stateFrom(this.generated);
     this.history = [];
     this.selection = null;
@@ -295,20 +292,41 @@ class Game {
     this.refresh();
   }
 
+  private get currentLevel() {
+    return LEVELS[this.levelIndex] as (typeof LEVELS)[number];
+  }
+
+  /** Levels are ordered by difficulty, so the first unsolved one is the next step up. */
+  private firstUnsolvedIndex(): number {
+    const i = LEVELS.findIndex((l) => !isComplete(this.prefs, l));
+    return i >= 0 ? i : 0;
+  }
+
+  /**
+   * Prefer the next picture the player has not finished, wrapping around, and
+   * only fall back to the plain next index once everything is done.
+   */
   private nextLevel(): void {
-    this.levelIndex = (this.levelIndex + 1) % LEVELS.length;
-    this.loadLevel(this.levelIndex, this.seed);
+    for (let step = 1; step <= LEVELS.length; step++) {
+      const candidate = (this.levelIndex + step) % LEVELS.length;
+      if (!isComplete(this.prefs, LEVELS[candidate] as (typeof LEVELS)[number])) {
+        this.loadLevel(candidate, this.seed);
+        return;
+      }
+    }
+    this.loadLevel((this.levelIndex + 1) % LEVELS.length, this.seed);
   }
 
   loadLevel(index: number, seed = 1): void {
     this.levelIndex = ((index % LEVELS.length) + LEVELS.length) % LEVELS.length;
     this.seed = seed;
+    this.recorded = false;
     this.generated = this.build(this.levelIndex, seed);
     this.state = stateFrom(this.generated);
     this.history = [];
     this.selection = null;
     this.renderer.reset(this.state);
-    this.prefs.levelIndex = this.levelIndex;
+    this.prefs.levelId = this.currentLevel.id;
     save(this.prefs);
     this.hideOverlay();
     this.refresh();
@@ -335,17 +353,24 @@ class Game {
   }
 
   private showWin(): void {
+    if (this.recorded) return;
+    this.recorded = true;
     this.renderer.triggerWin();
     if (this.prefs.sound) this.sfx.win();
-    this.prefs.levelIndex = (this.levelIndex + 1) % LEVELS.length;
-    save(this.prefs);
-    setTimeout(() => {
-      this.setOverlay(
-        this.state.level.name,
-        `Finished in ${this.state.moves} moves.`,
-        'Replay',
-      );
-    }, 1400);
+
+    const previous = this.prefs.completed[this.currentLevel.id];
+    this.prefs = recordWin(this.prefs, this.currentLevel, this.state.moves);
+    const best = this.prefs.completed[this.currentLevel.id];
+    const beatIt = previous !== undefined && best !== undefined && best.moves < previous.moves;
+
+    const done = LEVELS.filter((l) => isComplete(this.prefs, l)).length;
+    const sub = beatIt
+      ? `${this.state.moves} moves — a new best. ${done}/${LEVELS.length} pictures finished.`
+      : previous !== undefined
+        ? `${this.state.moves} moves. Your best is ${best?.moves}. ${done}/${LEVELS.length} finished.`
+        : `Finished in ${this.state.moves} moves. ${done}/${LEVELS.length} pictures finished.`;
+
+    setTimeout(() => this.setOverlay(this.state.level.name, sub, 'Replay'), 1700);
   }
 
   private setOverlay(title: string, sub: string, againLabel: string): void {
@@ -379,6 +404,10 @@ class Game {
 
   getDifficulty(): GeneratedLevel['difficulty'] {
     return this.generated.difficulty;
+  }
+
+  getLevelIds(): string[] {
+    return LEVELS.map((l) => l.id);
   }
 
   getStatus(): ReturnType<typeof status> {

@@ -17,6 +17,10 @@ export interface DifficultyReport {
   readonly cyclePressure: number;
   /** 0–1; higher means adjacent colours are harder to tell apart. */
   readonly confusability: number;
+  /** 0–1; how evenly the picture divides between colours. Even is harder. */
+  readonly balance: number;
+  /** Cells in the smallest colour — the first shelf payout you can reach. */
+  readonly rarestColour: number;
   readonly colours: number;
   readonly cells: number;
 }
@@ -156,6 +160,51 @@ export function adjacentConfusability(level: LevelSpec): number {
   return total === 0 ? 0 : weighted / total;
 }
 
+/**
+ * How evenly the picture divides between its colours, as normalised Shannon
+ * entropy (1 = every colour equally common).
+ *
+ * This is the least obvious difficulty term and one of the strongest. The shelf
+ * only grows when a colour is *finished*, so a level split evenly between five
+ * colours withholds every payout until late — you play the hardest part of the
+ * puzzle with the smallest buffer. Give one colour just six cells and the
+ * player clears it almost immediately, banks the extra slots, and coasts. Same
+ * grid, same palette size, completely different game.
+ */
+export function colourBalance(level: LevelSpec): number {
+  const counts: number[] = [];
+  const hist = new Map<ColourId, number>();
+  for (const t of level.target) {
+    if (t == null) continue;
+    hist.set(t, (hist.get(t) ?? 0) + 1);
+  }
+  let total = 0;
+  for (const n of hist.values()) {
+    counts.push(n);
+    total += n;
+  }
+  if (counts.length < 2 || total === 0) return 0;
+
+  let entropy = 0;
+  for (const n of counts) {
+    const p = n / total;
+    if (p > 0) entropy -= p * Math.log(p);
+  }
+  return entropy / Math.log(counts.length);
+}
+
+/** Size of the smallest colour group — how soon the first payout can land. */
+export function rarestColourSize(level: LevelSpec): number {
+  const hist = new Map<ColourId, number>();
+  for (const t of level.target) {
+    if (t == null) continue;
+    hist.set(t, (hist.get(t) ?? 0) + 1);
+  }
+  let min = Infinity;
+  for (const n of hist.values()) min = Math.min(min, n);
+  return Number.isFinite(min) ? min : 0;
+}
+
 export interface DifficultyInputs {
   readonly minCapacity: number;
   readonly peakShelf: number;
@@ -181,14 +230,22 @@ export function scoreDifficulty(
   const cycles = cyclePressure(level, state.jewels);
   const confusability = adjacentConfusability(level);
   const shelfTightness = inputs.minCapacity / Math.max(1, level.initialCapacity);
+  const balance = colourBalance(level);
+  const rarest = rarestColourSize(level);
+
+  // Scale matters too: the same structure over 400 cells is a longer, heavier
+  // puzzle than over 100, even though every ratio above is identical.
+  const scale = clamp(cellCount / 400, 0, 1);
 
   const score = clamp(
     100 *
-      (0.4 * clamp(shelfTightness, 0, 1) +
-        0.2 * clamp(fragmentation / 25, 0, 1) +
-        0.1 * clamp(singletons / 12, 0, 1) +
-        0.2 * clamp(cycles / 2, 0, 1) +
-        0.1 * confusability),
+      (0.3 * clamp(shelfTightness, 0, 1) +
+        0.15 * clamp(fragmentation / 25, 0, 1) +
+        0.08 * clamp(singletons / 12, 0, 1) +
+        0.15 * clamp(cycles / 2, 0, 1) +
+        0.08 * confusability +
+        0.16 * balance +
+        0.08 * scale),
     0,
     100,
   );
@@ -202,6 +259,8 @@ export function scoreDifficulty(
     singletons,
     cyclePressure: round2(cycles),
     confusability: round2(confusability),
+    balance: round2(balance),
+    rarestColour: rarest,
     colours: comps.size,
     cells: cellCount,
   };
@@ -209,3 +268,53 @@ export function scoreDifficulty(
 
 const clamp = (v: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, v));
 const round2 = (v: number): number => Math.round(v * 100) / 100;
+
+/**
+ * A difficulty estimate that needs no solver, so the gallery can rank and
+ * label every level instantly. It omits the two strongest terms — shelf
+ * tightness and cycle pressure — because both require actually solving a
+ * scramble, which costs far too much to do for a whole grid of thumbnails.
+ * Everything here is a property of the artwork alone, so it is stable across
+ * seeds and safe to sort by.
+ */
+export function staticDifficulty(level: LevelSpec): number {
+  const comps = targetComponents(level);
+  let cellCount = 0;
+  for (const t of level.target) if (t != null) cellCount++;
+
+  let extraComponents = 0;
+  let singletons = 0;
+  for (const sizes of comps.values()) {
+    extraComponents += Math.max(0, sizes.length - 1);
+    for (const s of sizes) if (s === 1) singletons++;
+  }
+
+  const fragmentation = (extraComponents / Math.max(1, cellCount)) * 100;
+  const balance = colourBalance(level);
+  const rarest = rarestColourSize(level);
+
+  // A tiny colour is an early shelf payout, which makes the rest of the level
+  // markedly easier — so it discounts the score rather than adding to it.
+  const earlyPayout = clamp(1 - rarest / 24, 0, 1);
+
+  return Math.round(
+    clamp(
+      100 *
+        (0.26 * clamp(cellCount / 420, 0, 1) +
+          0.22 * balance +
+          0.18 * clamp(comps.size / 8, 0, 1) +
+          0.16 * clamp(fragmentation / 25, 0, 1) +
+          0.1 * clamp(singletons / 12, 0, 1) +
+          0.08 * adjacentConfusability(level) -
+          0.12 * (1 - earlyPayout)),
+      0,
+      100,
+    ),
+  );
+}
+
+/** 1–5, for a gallery tile that has no room for a number. */
+export function difficultyStars(level: LevelSpec): number {
+  const d = staticDifficulty(level);
+  return Math.max(1, Math.min(5, Math.floor(d / 16) + 1));
+}

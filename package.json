@@ -12,8 +12,8 @@
     "e2e": "playwright test",
     "typecheck": "tsc --noEmit",
     "icons": "node scripts/make-icons.mjs",
-    "deploy": "npx vercel --prod",
-    "deploy:preview": "npx vercel",
+    "deploy": "npx vercel --prod --yes",
+    "deploy:preview": "npx vercel --yes",
     "deploy:surge": "npm run build && npx surge dist"
   },
   "devDependencies": {

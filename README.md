@@ -71,7 +71,9 @@ Play is **select, then choose the destination**:
 - **Tap a shelf jewel** → selects that colour; tap a matching socket to pour it back.
 - **Finish a colour** → the shelf grows by 3, with a light-sweep and sparkle burst
   across that colour. Playing well loosens the binding constraint.
-- **Win** when every jewel sits on its own colour.
+- **Win** when every jewel sits on its own colour. Finished pictures are kept in
+  the **gallery**; unsolved ones show only as a silhouette, so the reveal is the
+  reward rather than something you can flick through in advance.
 
 Jewels are **round** on **square** sockets, so a circle never covers its cell:
 the target colour always frames it. Matching turns the frame invisible, which is

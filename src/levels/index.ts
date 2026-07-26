@@ -1,5 +1,7 @@
 import { buildLevel, type ArtSpec } from '../gen/art';
+import { staticDifficulty } from '../gen/difficulty';
 import type { LevelSpec } from '../core/types';
+import { PACK } from './pack';
 
 /**
  * Palettes are chosen for perceptual separation, not just prettiness — the
@@ -121,7 +123,15 @@ const ART: readonly ArtSpec[] = [
   },
 ];
 
-export const LEVELS: readonly LevelSpec[] = ART.map(buildLevel);
+/**
+ * Ordered by measured difficulty rather than by authoring order, so the ramp is
+ * honest: the curve comes from what the artwork actually demands, not from
+ * whichever picture I happened to draw first. `staticDifficulty` is
+ * solver-free, so this stays instant even as the pack grows.
+ */
+export const LEVELS: readonly LevelSpec[] = [...ART, ...PACK]
+  .map(buildLevel)
+  .sort((a, b) => staticDifficulty(a) - staticDifficulty(b) || a.id.localeCompare(b.id));
 
 export function levelById(id: string): LevelSpec | undefined {
   return LEVELS.find((l) => l.id === id);

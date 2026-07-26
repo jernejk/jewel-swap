@@ -35,6 +35,8 @@ interface Flying {
   kind: 'pickup' | 'place';
   cell: number;
   slot: number;
+  index: number;
+  batch: number;
   start: number;
   soundPlayed: boolean;
 }
@@ -48,13 +50,24 @@ export interface RenderCallbacks {
   onLand(kind: 'pickup' | 'place', indexInBatch: number, total: number): void;
 }
 
-const PICKUP_MS = 300;
-const PLACE_MS = 280;
-const STAGGER_MS = 34;
-const SLIDE_MS = 220;
-const SHIMMER_MS = 1200;
-const UNLOCK_MS = 620;
-const WIN_MS = 1500;
+/**
+ * Timings are deliberately unhurried. At a 34ms stagger the batch read as one
+ * blurred event rather than a countable sequence — you could tell something had
+ * moved but not what, or how many. Wider spacing turns each jewel into its own
+ * beat, which is the satisfying part and the part a distractible brain can
+ * actually follow. Slower is also more legible: you can see *which* sockets
+ * filled without replaying it in your head.
+ */
+const PICKUP_MS = 420;
+const PLACE_MS = 400;
+const STAGGER_MS = 82;
+/** Long batches would otherwise crawl, so the stagger eases off as they grow. */
+const STAGGER_MIN_MS = 34;
+const STAGGER_FALLOFF = 10;
+const SLIDE_MS = 320;
+const SHIMMER_MS = 1600;
+const UNLOCK_MS = 760;
+const WIN_MS = 1900;
 
 export class Renderer {
   private ctx: CanvasRenderingContext2D;
@@ -90,6 +103,19 @@ export class Renderer {
 
   private scale(ms: number): number {
     return this.reducedMotion ? 1 : ms;
+  }
+
+  /**
+   * When the nth jewel of a batch sets off. The gap starts wide so each one
+   * lands as its own beat, then decays toward a floor — a twenty-four jewel
+   * batch at a flat 82ms would take two seconds to finish pouring.
+   */
+  private batchDelay(index: number): number {
+    let total = 0;
+    for (let k = 0; k < index; k++) {
+      total += Math.max(STAGGER_MIN_MS, STAGGER_MS - k * STAGGER_FALLOFF);
+    }
+    return this.scale(total);
   }
 
   setState(state: GameState): void {
@@ -181,11 +207,13 @@ export class Renderer {
           colour: effect.colour,
           from: this.cellCentre(from),
           to: this.cellCentre(cell),
-          delay: this.scale(i * STAGGER_MS),
+          delay: this.batchDelay(i),
           duration: this.scale(PLACE_MS),
           kind: 'place',
           cell,
           slot: -1,
+          index: i,
+          batch: effect.cells.length,
           start: now,
           soundPlayed: false,
         });
@@ -206,11 +234,13 @@ export class Renderer {
           colour: effect.colour,
           from: this.cellCentre(cell),
           to: this.slotCentre(slot),
-          delay: this.scale(i * STAGGER_MS),
+          delay: this.batchDelay(i),
           duration: this.scale(PICKUP_MS),
           kind: 'pickup',
           cell,
           slot,
+          index: i,
+          batch: effect.cells.length,
           start: now,
           soundPlayed: false,
         });
@@ -223,11 +253,13 @@ export class Renderer {
           colour: effect.colour,
           from: this.slotCentre(slot),
           to: this.cellCentre(cell),
-          delay: this.scale(i * STAGGER_MS),
+          delay: this.batchDelay(i),
           duration: this.scale(PLACE_MS),
           kind: 'place',
           cell,
           slot,
+          index: i,
+          batch: effect.cells.length,
           start: now,
           soundPlayed: false,
         });
@@ -670,8 +702,7 @@ export class Renderer {
 
       if (!f.soundPlayed && t > 0.82) {
         f.soundPlayed = true;
-        const batch = this.flying.filter((o) => o.start === f.start).length;
-        this.callbacks.onLand(f.kind, Math.round(f.delay / Math.max(1, this.scale(STAGGER_MS))), batch);
+        this.callbacks.onLand(f.kind, f.index, f.batch);
       }
     }
   }
