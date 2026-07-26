@@ -152,7 +152,10 @@ class Game {
 
     const cell = this.renderer.hitTestCell(x, y);
     if (cell == null) {
-      this.clearSelection();
+      // A tap that lands on nothing keeps the batch in hand. The board is
+      // centred with dead space above and below it, and on a phone a thumb
+      // clips those edges constantly — dropping the selection there felt like
+      // the game letting go of something you were still holding.
       return;
     }
 
@@ -172,7 +175,9 @@ class Game {
       return;
     }
 
-    this.clearSelection();
+    // A settled jewel, or an empty socket of the wrong colour: nothing to do,
+    // and nothing to give up either.
+    this.renderer.rejectTap(cell);
   }
 
   private tapShelf(slot: number): void {
@@ -183,10 +188,9 @@ class Game {
       return;
     }
     const colour = slot >= 0 ? this.state.shelf[slot] : undefined;
-    if (colour == null) {
-      this.clearSelection();
-      return;
-    }
+    // Empty slots and the tray's own background are not a "deselect" gesture.
+    // Only tapping the same batch again puts it down.
+    if (colour == null) return;
     if (sel && sel.onShelf && sel.colour === colour) this.clearSelection();
     else this.selectShelf(colour);
   }

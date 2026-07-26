@@ -67,6 +67,8 @@ const STAGGER_FALLOFF = 8;
 const SLIDE_MS = 320;
 const SHIMMER_MS = 1600;
 const UNLOCK_MS = 760;
+/** Reference size for cached jewel sprites; blitted scaled to the real cell. */
+const SPRITE_PX = 96;
 const WIN_MS = 1900;
 
 export class Renderer {
@@ -86,6 +88,10 @@ export class Renderer {
   private selection: { cells: ReadonlySet<number>; colour: ColourId; onShelf: boolean } | null =
     null;
   private targets: ReadonlySet<number> = new Set();
+  /** One pre-rendered jewel per colour, blitted scaled. See `jewelSprite`. */
+  private sprites = new Map<ColourId, HTMLCanvasElement>();
+  private shadowSprite: HTMLCanvasElement | null = null;
+  private socketSprite: HTMLCanvasElement | null = null;
   symbols: SymbolMode = 'off';
   reducedMotion = false;
 
@@ -122,8 +128,101 @@ export class Renderer {
     this.state = state;
   }
 
+  /**
+   * Draw each jewel once into an offscreen canvas, then blit it scaled.
+   *
+   * The previous code built a fresh `createLinearGradient` for every jewel on
+   * every frame — over six hundred gradient objects per frame on a 25x25 board.
+   * A laptop absorbs that; a phone does not, which is exactly where the stutter
+   * showed up. Gradients, arcs and the specular highlight are all baked in here
+   * once per colour, so the per-frame cost collapses to a single drawImage.
+   *
+   * Rendered generously large so scaling up for big cells stays crisp.
+   */
+  private jewelSprite(colour: ColourId): HTMLCanvasElement {
+    const cached = this.sprites.get(colour);
+    if (cached) return cached;
+
+    const dpr = Math.min(3, window.devicePixelRatio || 1);
+    const px = Math.round(SPRITE_PX * dpr);
+    const canvas = document.createElement('canvas');
+    canvas.width = px;
+    canvas.height = px;
+    const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
+    const hex = this.state.level.palette[colour] as string;
+    const r = px / 2;
+
+    ctx.beginPath();
+    ctx.arc(r, r, r, 0, Math.PI * 2);
+    const grad = ctx.createLinearGradient(r, 0, r, px);
+    grad.addColorStop(0, shade(hex, 0.3));
+    grad.addColorStop(0.5, hex);
+    grad.addColorStop(1, shade(hex, -0.26));
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    ctx.save();
+    ctx.clip();
+    ctx.fillStyle = 'rgba(255,255,255,0.42)';
+    ctx.beginPath();
+    ctx.ellipse(r - r * 0.34, r - r * 0.4, r * 0.4, r * 0.26, -0.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    this.sprites.set(colour, canvas);
+    return canvas;
+  }
+
+  /**
+   * The empty-socket recess, baked once. It is pure black alpha and therefore
+   * colour-independent, so a single sprite serves every socket on the board —
+   * which matters because a freshly scrambled board is mostly empty sockets
+   * once play starts, and this was rebuilding a gradient for each one, each frame.
+   */
+  private socketRecess(): HTMLCanvasElement {
+    if (this.socketSprite) return this.socketSprite;
+    const px = 64;
+    const canvas = document.createElement('canvas');
+    canvas.width = px;
+    canvas.height = px;
+    const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
+    const grad = ctx.createRadialGradient(px / 2, px / 2, px * 0.08, px / 2, px / 2, px * 0.55);
+    grad.addColorStop(0, 'rgba(0,0,0,0.26)');
+    grad.addColorStop(1, 'rgba(0,0,0,0.04)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, px, px);
+    this.socketSprite = canvas;
+    return canvas;
+  }
+
+  /**
+   * The contact shadow, baked once. It used to be an ellipse drawn under a
+   * `ctx.filter = 'blur(1px)'`, and a canvas filter forces a separate
+   * compositing pass per call — the single most expensive thing in the frame
+   * on mobile. A pre-blurred radial gradient looks the same and costs nothing.
+   */
+  private contactShadow(): HTMLCanvasElement {
+    if (this.shadowSprite) return this.shadowSprite;
+    const px = 64;
+    const canvas = document.createElement('canvas');
+    canvas.width = px;
+    canvas.height = px;
+    const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
+    const grad = ctx.createRadialGradient(px / 2, px / 2, 0, px / 2, px / 2, px / 2);
+    grad.addColorStop(0, 'rgba(0,0,0,0.42)');
+    grad.addColorStop(0.6, 'rgba(0,0,0,0.20)');
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, px, px);
+    this.shadowSprite = canvas;
+    return canvas;
+  }
+
   reset(state: GameState): void {
     this.state = state;
+    // Palettes are per level, so cached sprites are only valid for one board.
+    this.sprites.clear();
+    this.socketSprite = null;
     this.flying = [];
     this.shimmers = [];
     this.slideFrom.clear();
@@ -481,7 +580,10 @@ export class Renderer {
       // The socket is the answer key: it always shows the colour this cell
       // must end up as, which is why the game needs no instructions.
       this.roundRect(x + gap / 2, y + gap / 2, cell - gap, cell - gap, cell * 0.22);
-      this.ctx.fillStyle = jewel == null ? shade(targetHex, -0.28) : targetHex;
+      // Only lightly darkened. The socket's job is to state the target colour,
+      // and a heavy recess was winning that argument — empty cells stopped
+      // looking like the colour they are waiting for.
+      this.ctx.fillStyle = jewel == null ? shade(targetHex, -0.1) : targetHex;
       this.ctx.fill();
 
       if (jewel == null) {
@@ -491,20 +593,9 @@ export class Renderer {
         // four sides plus a darkened centre says "hole" instead.
         this.ctx.save();
         this.ctx.clip();
-        const inner = this.ctx.createRadialGradient(
-          x + cell / 2,
-          y + cell / 2,
-          cell * 0.08,
-          x + cell / 2,
-          y + cell / 2,
-          cell * 0.55,
-        );
-        inner.addColorStop(0, 'rgba(0,0,0,0.5)');
-        inner.addColorStop(1, 'rgba(0,0,0,0.12)');
-        this.ctx.fillStyle = inner;
-        this.ctx.fillRect(x, y, cell, cell);
-        this.ctx.strokeStyle = 'rgba(0,0,0,0.42)';
-        this.ctx.lineWidth = Math.max(1, cell * 0.09);
+        this.ctx.drawImage(this.socketRecess(), x, y, cell, cell);
+        this.ctx.strokeStyle = 'rgba(0,0,0,0.28)';
+        this.ctx.lineWidth = Math.max(1, cell * 0.08);
         this.roundRect(x + gap / 2, y + gap / 2, cell - gap, cell - gap, cell * 0.22);
         this.ctx.stroke();
         this.ctx.restore();
@@ -523,21 +614,14 @@ export class Renderer {
           // a halo just reads as a highlight, which is why the earlier version
           // looked off even though the scale was doing its job.
           if (picked) {
-            this.ctx.save();
-            this.ctx.fillStyle = 'rgba(0,0,0,0.34)';
-            this.ctx.beginPath();
-            this.ctx.ellipse(
-              x + cell / 2,
-              y + cell / 2 + cell * 0.2,
-              cell * 0.32,
-              cell * 0.15,
-              0,
-              0,
-              Math.PI * 2,
+            const sw = cell * 0.78;
+            this.ctx.drawImage(
+              this.contactShadow(),
+              x + cell / 2 - sw / 2,
+              y + cell / 2 + cell * 0.1 - sw * 0.28,
+              sw,
+              sw * 0.56,
             );
-            this.ctx.filter = 'blur(1px)';
-            this.ctx.fill();
-            this.ctx.restore();
           }
           this.drawJewel(
             x + cell / 2,
@@ -546,7 +630,6 @@ export class Renderer {
             jewel,
             1 + shim * 0.3 + (picked ? 0.16 : 0) + breathe,
             shim * 0.72,
-            picked ? cell * 0.2 : 0,
           );
         };
         if (picked) raised.push(paint);
@@ -554,8 +637,6 @@ export class Renderer {
         if (shim > 0.02) {
           this.ctx.save();
           this.ctx.globalAlpha = shim * 0.85;
-          this.ctx.shadowColor = level.palette[jewel] as string;
-          this.ctx.shadowBlur = cell * 0.7 * shim;
           this.ctx.strokeStyle = `rgba(255,255,255,${shim})`;
           this.ctx.lineWidth = Math.max(1.5, cell * 0.07);
           this.roundRect(x + gap / 2, y + gap / 2, cell - gap, cell - gap, cell * 0.22);
@@ -692,8 +773,6 @@ export class Renderer {
         const t = easeOutBack(opening);
         const s = size * (0.35 + 0.65 * t);
         ctx.save();
-        ctx.shadowColor = ACCENT;
-        ctx.shadowBlur = size * 0.9 * (1 - opening);
         this.roundRect(p.x - s / 2, p.y - s / 2, s, s, s * 0.28);
         ctx.fillStyle = `rgba(123,224,192,${0.5 * (1 - opening) + 0.08})`;
         ctx.fill();
@@ -802,44 +881,20 @@ export class Renderer {
     colour: ColourId,
     scale: number,
     flash = 0,
-    lift = 0,
   ): void {
     const ctx = this.ctx;
-    const hex = this.state.level.palette[colour] as string;
-    const r = (size * scale) / 2;
-
-    ctx.save();
-    if (lift > 0) {
-      // A cast shadow below-right is what sells "hovering above the board".
-      ctx.shadowColor = 'rgba(0,0,0,0.55)';
-      ctx.shadowBlur = lift;
-      ctx.shadowOffsetY = lift * 0.34;
-    }
-    ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
-    const grad = ctx.createLinearGradient(cx, cy - r, cx, cy + r);
-    grad.addColorStop(0, shade(hex, 0.3));
-    grad.addColorStop(0.5, hex);
-    grad.addColorStop(1, shade(hex, -0.26));
-    ctx.fillStyle = grad;
-    ctx.fill();
-
-    ctx.shadowColor = 'transparent';
-    ctx.shadowBlur = 0;
-    ctx.shadowOffsetY = 0;
-
-    // A single specular blob reads as "glass" far more cheaply than a bevel.
-    ctx.clip();
-    ctx.fillStyle = 'rgba(255,255,255,0.42)';
-    ctx.beginPath();
-    ctx.ellipse(cx - r * 0.34, cy - r * 0.4, r * 0.4, r * 0.26, -0.5, 0, Math.PI * 2);
-    ctx.fill();
+    const d = size * scale;
+    ctx.drawImage(this.jewelSprite(colour), cx - d / 2, cy - d / 2, d, d);
 
     if (flash > 0) {
-      ctx.fillStyle = `rgba(255,255,255,${flash})`;
-      ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+      ctx.save();
+      ctx.globalAlpha = flash;
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(cx, cy, d / 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
     }
-    ctx.restore();
   }
 
   private drawGlyph(cx: number, cy: number, size: number, colour: ColourId, alpha: number): void {
