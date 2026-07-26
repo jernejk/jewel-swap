@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Jewel Swap</title>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#171528" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Jewel Swap" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <!-- iOS reads none of the manifest icons; this link is the home-screen tile. -->
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png" />
+    <link rel="icon" type="image/svg+xml" href="./icon.svg" />
+    <style>
+      :root {
+        --bg: #171528;
+        --panel: rgba(255, 255, 255, 0.08);
+        --ink: #f2eefb;
+        --muted: #a79fc4;
+        --accent: #7be0c0;
+      }
+      * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+      html, body {
+        margin: 0;
+        height: 100%;
+        overflow: hidden;
+        overscroll-behavior: none;
+        background: var(--bg);
+        color: var(--ink);
+        font: 15px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+        -webkit-user-select: none;
+        user-select: none;
+        touch-action: manipulation;
+      }
+      body {
+        background: radial-gradient(120% 80% at 50% 0%, #2a2547 0%, #171528 62%);
+        display: flex;
+        flex-direction: column;
+        padding: env(safe-area-inset-top) env(safe-area-inset-right)
+          env(safe-area-inset-bottom) env(safe-area-inset-left);
+      }
+      header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px 4px;
+        flex: 0 0 auto;
+      }
+      #title { font-weight: 650; letter-spacing: 0.01em; }
+      #stats { margin-left: auto; color: var(--muted); font-variant-numeric: tabular-nums; font-size: 13px; }
+      #canvas { flex: 1 1 auto; width: 100%; display: block; touch-action: none; }
+      footer {
+        display: flex;
+        gap: 8px;
+        padding: 8px 12px 14px;
+        flex: 0 0 auto;
+        justify-content: center;
+      }
+      button {
+        appearance: none;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        background: var(--panel);
+        color: var(--ink);
+        border-radius: 13px;
+        padding: 11px 13px;
+        font: inherit;
+        font-size: 13px;
+        font-weight: 550;
+        min-width: 62px;
+        min-height: 46px;
+        cursor: pointer;
+        transition: transform 0.12s ease, background 0.12s ease, opacity 0.12s ease;
+      }
+      button:active { transform: scale(0.94); background: rgba(255, 255, 255, 0.16); }
+      button:disabled { opacity: 0.35; cursor: default; }
+      button[aria-pressed='true'] { background: rgba(123, 224, 192, 0.22); border-color: var(--accent); }
+      #overlay {
+        position: fixed;
+        inset: 0;
+        display: none;
+        place-items: center;
+        background: rgba(12, 10, 24, 0.78);
+        backdrop-filter: blur(7px);
+        z-index: 10;
+        padding: 24px;
+      }
+      #overlay.show { display: grid; }
+      #card {
+        background: #221f3b;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 22px;
+        padding: 26px 26px 20px;
+        text-align: center;
+        max-width: 340px;
+        animation: pop 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      @keyframes pop { from { transform: scale(0.86); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+      #card h2 { margin: 0 0 6px; font-size: 25px; }
+      #card p { margin: 0 0 18px; color: var(--muted); font-size: 14px; }
+      #card .row { display: flex; gap: 8px; justify-content: center; }
+      @media (prefers-reduced-motion: reduce) {
+        * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <span id="title">Jewel Swap</span>
+      <span id="stats"></span>
+    </header>
+    <canvas id="canvas" aria-label="Puzzle board"></canvas>
+    <footer>
+      <button id="undo" title="Undo the last move">Undo</button>
+      <button id="hint" title="Show a move that leads to a win">Hint</button>
+      <button id="restart" title="Start this picture again">Restart</button>
+      <button id="symbols" aria-pressed="false" title="Show a distinct shape on each colour">Shapes</button>
+      <button id="next" title="Next picture">Next</button>
+    </footer>
+    <div id="overlay" role="dialog" aria-modal="true">
+      <div id="card">
+        <h2 id="win-title">Complete</h2>
+        <p id="win-sub"></p>
+        <div class="row">
+          <button id="win-again">Replay</button>
+          <button id="win-next">Next picture</button>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/app/main.ts"></script>
+  </body>
+</html>

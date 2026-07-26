@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#171528"/>
+  <!-- Square sockets: the target colour, always visible. -->
+  <g>
+    <rect x="96" y="96" width="140" height="140" rx="40" fill="#ff6b84"/>
+    <rect x="276" y="96" width="140" height="140" rx="40" fill="#ffc531"/>
+    <rect x="96" y="276" width="140" height="140" rx="40" fill="#3fc7f4"/>
+    <rect x="276" y="276" width="140" height="140" rx="40" fill="#7be0c0"/>
+  </g>
+  <!-- Round jewels. Three sit right; the top-right is misplaced, which is the
+       whole game in one tile: a circle never covers its socket. -->
+  <g>
+    <circle cx="166" cy="166" r="55" fill="#ff6b84"/>
+    <circle cx="346" cy="166" r="55" fill="#3fc7f4"/>
+    <circle cx="166" cy="346" r="55" fill="#3fc7f4"/>
+    <circle cx="346" cy="346" r="55" fill="#7be0c0"/>
+  </g>
+  <g fill="rgba(255,255,255,0.45)">
+    <ellipse cx="148" cy="146" rx="22" ry="14" transform="rotate(-28 148 146)"/>
+    <ellipse cx="328" cy="146" rx="22" ry="14" transform="rotate(-28 328 146)"/>
+    <ellipse cx="148" cy="326" rx="22" ry="14" transform="rotate(-28 148 326)"/>
+    <ellipse cx="328" cy="326" rx="22" ry="14" transform="rotate(-28 328 326)"/>
+  </g>
+</svg>
