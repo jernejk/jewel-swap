@@ -128,6 +128,39 @@ Two invariants are enforced at generation time, both discovered by failing tests
   enough that most cells can start misplaced (see `minimumPreMatched` — a colour
   covering over half the picture *must* sit on itself somewhere).
 
+## Turning any image into a level
+
+```bash
+npm run art -- art/apple.png --size 16 --colours 5
+npm run art -- art/*.png --size 18 --out src/levels/pack.ts
+```
+
+Decoding runs in headless Chromium — Playwright is already here for the e2e suite, so
+PNG/JPEG/WebP/SVG all work without an image library. Everything downstream is shared with
+the game: same CIEDE2000, same `buildLevel`, same solver. **Nothing is written without a
+recorded winning trace**, so a generated level cannot reach a player unsolvable.
+
+The pipeline, and the two steps that turned out to matter:
+
+1. Box-average down to the grid (not nearest-neighbour, which samples specks).
+2. **k-means in CIELAB, not RGB.** Clustering is a perceptual question — in RGB, two greens
+   nobody can tell apart sit further apart than a blue and a purple anyone can, so an RGB
+   clusterer spends its colour budget in the wrong places.
+3. **Split whatever colour dominates into shades**, up to `--max-colours`, refusing any
+   split below ΔE 22. This is what physical diamond painting does with a large area.
+4. **Flood-fill the backdrop away from the border.** The most important step, and only
+   obvious after a conversion failed: a real image is a subject on a large flat backdrop,
+   routinely two thirds of the pixels — far past the point where a colour can even be
+   scrambled, so a huge slice of the board would start pre-solved. Shading cannot rescue a
+   *flat* backdrop either. Masking it also matches the original game, whose boards are
+   shaped like the subject rather than filled rectangles. Flood-fill rather than
+   remove-everywhere so a white backdrop vanishes while white *eyes* survive.
+5. Merge indistinguishable palette entries, drop unused ones, de-speckle, certify, score.
+
+Feed it **already-stylised flat-colour art** — pixel art, vector icons, simple character
+art. Photographs technically convert but make muddy puzzles: continuous tone has no flat
+regions to become clean colour groups.
+
 ## Accessibility
 
 The entire game is colour discrimination, so **Shapes** mode gives each colour a

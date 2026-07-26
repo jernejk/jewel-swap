@@ -14,7 +14,8 @@
     "icons": "node scripts/make-icons.mjs",
     "deploy": "npx vercel --prod --yes",
     "deploy:preview": "npx vercel --yes",
-    "deploy:surge": "npm run build && npx surge dist"
+    "deploy:surge": "npm run build && npx surge dist",
+    "art": "vite-node scripts/image-to-level.ts --"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0",
