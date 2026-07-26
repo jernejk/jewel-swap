@@ -160,11 +160,17 @@
         align-items: center;
         gap: 3px;
         padding: 12px 8px 10px;
-        min-height: 0;
         border-radius: 16px;
         background: rgba(255, 255, 255, 0.05);
         border: 1px solid rgba(255, 255, 255, 0.09);
+        color: var(--ink);
+        cursor: pointer;
+        text-align: center;
+        transition: transform 0.12s ease, background 0.12s ease;
       }
+      .tile:active { transform: scale(0.97); }
+      .tile:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+      .tile canvas { flex: 0 0 auto; }
       .tile canvas { border-radius: 8px; }
       .tile.done { background: rgba(123, 224, 192, 0.09); border-color: rgba(123, 224, 192, 0.3); }
       .tile.current { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }

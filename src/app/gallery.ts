@@ -60,6 +60,14 @@ export class Gallery {
       const tile = (e.target as HTMLElement).closest('[data-level]');
       if (tile) opts.onPick((tile as HTMLElement).dataset.level as string);
     });
+    // Divs are not keyboard-activatable for free, so put that back.
+    this.grid.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      const tile = (e.target as HTMLElement).closest('[data-level]');
+      if (!tile) return;
+      e.preventDefault();
+      opts.onPick((tile as HTMLElement).dataset.level as string);
+    });
   }
 
   /**
@@ -102,7 +110,13 @@ export class Gallery {
       const best = save.completed[level.id];
       const colours = new Set(level.target.filter((t) => t != null)).size;
 
-      const tile = document.createElement('button');
+      // A div, not a button. A <button> used as a flex container does not size
+      // to its own content in Chrome — the tile collapsed to a fraction of its
+      // height and the thumbnails spilled over each other. Semantics are
+      // restored with role/tabindex, and the grid already delegates clicks.
+      const tile = document.createElement('div');
+      tile.setAttribute('role', 'button');
+      tile.tabIndex = 0;
       tile.className = `tile${revealed ? ' done' : ''}${level.id === currentId ? ' current' : ''}`;
       tile.dataset.level = level.id;
       tile.setAttribute(

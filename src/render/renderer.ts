@@ -60,10 +60,10 @@ export interface RenderCallbacks {
  */
 const PICKUP_MS = 420;
 const PLACE_MS = 400;
-const STAGGER_MS = 82;
+const STAGGER_MS = 108;
 /** Long batches would otherwise crawl, so the stagger eases off as they grow. */
-const STAGGER_MIN_MS = 34;
-const STAGGER_FALLOFF = 10;
+const STAGGER_MIN_MS = 48;
+const STAGGER_FALLOFF = 8;
 const SLIDE_MS = 320;
 const SHIMMER_MS = 1600;
 const UNLOCK_MS = 760;
@@ -498,17 +498,39 @@ export class Renderer {
         // phone; an outline is something you have to notice and decode.
         const picked =
           this.selection !== null && !this.selection.onShelf && this.selection.cells.has(i);
-        const breathe = picked ? 0.03 * Math.sin(now / 320) : 0;
-        const paint = (): void =>
+        const breathe = picked ? 0.02 * Math.sin(now / 340) : 0;
+        const paint = (): void => {
+          // A contact shadow cast onto the socket, rather than a glow around
+          // the jewel. Grounding the shape is what makes it read as lifted;
+          // a halo just reads as a highlight, which is why the earlier version
+          // looked off even though the scale was doing its job.
+          if (picked) {
+            this.ctx.save();
+            this.ctx.fillStyle = 'rgba(0,0,0,0.34)';
+            this.ctx.beginPath();
+            this.ctx.ellipse(
+              x + cell / 2,
+              y + cell / 2 + cell * 0.2,
+              cell * 0.32,
+              cell * 0.15,
+              0,
+              0,
+              Math.PI * 2,
+            );
+            this.ctx.filter = 'blur(1px)';
+            this.ctx.fill();
+            this.ctx.restore();
+          }
           this.drawJewel(
             x + cell / 2,
-            y + cell / 2,
+            y + cell / 2 - (picked ? cell * 0.06 : 0),
             cell * (winT > 0 ? 1 - gap / cell : 0.78),
             jewel,
-            1 + shim * 0.3 + (picked ? 0.3 : 0) + breathe,
+            1 + shim * 0.3 + (picked ? 0.16 : 0) + breathe,
             shim * 0.72,
-            picked ? cell * 0.34 : 0,
+            picked ? cell * 0.2 : 0,
           );
+        };
         if (picked) raised.push(paint);
         else paint();
         if (shim > 0.02) {
