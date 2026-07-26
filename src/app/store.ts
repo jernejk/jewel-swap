@@ -10,10 +10,25 @@ export interface Completion {
   readonly plays: number;
 }
 
+/**
+ * A board mid-solve. Stored as plain arrays rather than a GameState so the
+ * format survives refactors of the core — everything else is recomputed on
+ * load. Keyed by level id and seed so a stale board is never restored onto a
+ * different puzzle.
+ */
+export interface InProgress {
+  readonly levelId: string;
+  readonly seed: number;
+  readonly jewels: (number | null)[];
+  readonly shelf: number[];
+  readonly moves: number;
+}
+
 export interface Save {
   /** Keyed by level id, so reordering or inserting levels never loses progress. */
   completed: Record<string, Completion>;
   levelId: string | null;
+  inProgress: InProgress | null;
   symbols: boolean;
   sound: boolean;
 }
@@ -21,6 +36,7 @@ export interface Save {
 const DEFAULTS: Save = {
   completed: {},
   levelId: null,
+  inProgress: null,
   symbols: false,
   sound: true,
 };
@@ -55,6 +71,25 @@ export function save(state: Save): void {
   }
 }
 
+/**
+ * Write only the in-progress board, merged onto whatever is currently stored.
+ *
+ * This fires on `pagehide`, and the app's in-memory copy can be older than
+ * storage by then — blindly writing it back wiped completed pictures. Re-reading
+ * first means a snapshot can never cost someone their finished levels, which is
+ * the one thing in here that is genuinely painful to lose.
+ */
+export function saveProgress(state: Save, snapshot: InProgress | null): Save {
+  const stored = load();
+  const next: Save = {
+    ...state,
+    completed: { ...state.completed, ...stored.completed },
+    inProgress: snapshot,
+  };
+  save(next);
+  return next;
+}
+
 export function recordWin(state: Save, level: LevelSpec, moves: number): Save {
   const prior = state.completed[level.id];
   const next: Save = {
@@ -67,6 +102,8 @@ export function recordWin(state: Save, level: LevelSpec, moves: number): Save {
         plays: (prior?.plays ?? 0) + 1,
       },
     },
+    // A finished board is not worth resuming.
+    inProgress: null,
   };
   save(next);
   return next;

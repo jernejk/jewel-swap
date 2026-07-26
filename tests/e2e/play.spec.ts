@@ -3,7 +3,13 @@ import { expect, test, type Page } from '@playwright/test';
 interface TestHook {
   getStatus(): 'playing' | 'won' | 'stuck';
   getLevelIds(): string[];
-  getState(): { moves: number; shelf: number[]; capacity: number; level: { id: string } };
+  getState(): {
+    moves: number;
+    shelf: number[];
+    capacity: number;
+    jewels: (number | null)[];
+    level: { id: string };
+  };
   getLegalMoves(): { type: string; cell: number }[];
   getDifficulty(): Record<string, number>;
   loadLevel(index: number, seed?: number): void;

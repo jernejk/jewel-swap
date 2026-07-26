@@ -50,6 +50,30 @@ function withDerived(
   return { ...next, completedColours: done, capacity };
 }
 
+/**
+ * Rebuild a state from a stored board. Only the cells, the shelf and the move
+ * count are persisted; capacity and completed colours are derived, so a save
+ * cannot drift out of agreement with the rules that compute them.
+ */
+export function hydrate(
+  level: LevelSpec,
+  jewels: readonly (ColourId | null)[],
+  shelf: readonly ColourId[],
+  moves: number,
+  opts: CreateOptions = {},
+): GameState {
+  const base: GameState = {
+    level,
+    jewels,
+    shelf,
+    capacity: level.initialCapacity,
+    completedColours: [],
+    allowLiftCorrect: opts.allowLiftCorrect ?? false,
+    moves,
+  };
+  return withDerived(base, shelf, jewels);
+}
+
 export interface ReduceResult {
   readonly state: GameState;
   readonly effect: MoveEffect;

@@ -258,6 +258,21 @@ export class Renderer {
     return this.flying.length > 0;
   }
 
+  /**
+   * Throw away cached sprites so the next frame rebuilds them.
+   *
+   * Mobile browsers may discard a canvas's backing store while a page is
+   * backgrounded — the element survives, its pixels do not. Every jewel and the
+   * socket recess are cached offscreen canvases, so coming back from another app
+   * left `drawImage` painting nothing: jewels vanished and the board went flat.
+   * Rebuilding is a handful of small canvases, so it is cheap to be paranoid.
+   */
+  invalidateSprites(): void {
+    this.sprites.clear();
+    this.socketSprite = null;
+    this.shadowSprite = null;
+  }
+
   /** Snap every in-flight jewel home. Undo and restart must never fight an animation. */
   finishAnimations(): void {
     this.flying = [];

@@ -6,7 +6,7 @@ import {
   selectedBatch,
   status,
 } from '../core/moves';
-import { reduce } from '../core/reducer';
+import { hydrate, reduce } from '../core/reducer';
 import type { Action, GameState } from '../core/types';
 import { generate, stateFrom, type GeneratedLevel } from '../gen/scramble';
 import { LEVELS } from '../levels';
@@ -14,7 +14,7 @@ import { Sfx } from '../render/audio';
 import { Renderer } from '../render/renderer';
 import { findHint } from '../solver/solver';
 import { Gallery } from './gallery';
-import { isComplete, load, recordWin, save, type Save } from './store';
+import { isComplete, load, recordWin, save, saveProgress, type Save } from './store';
 
 /** The cell an action points at, for shake feedback and hint highlighting. */
 function anchorCell(action: Action): number {
@@ -45,7 +45,7 @@ class Game {
     const saved = LEVELS.findIndex((l) => l.id === this.prefs.levelId);
     this.levelIndex = saved >= 0 ? saved : this.firstUnsolvedIndex();
     this.generated = this.build(this.levelIndex, this.seed);
-    this.state = stateFrom(this.generated);
+    this.state = this.restoreOrFresh();
     this.renderer = new Renderer(this.canvas, this.state, {
       onLand: (kind, i, total) => {
         if (!this.prefs.sound) return;
@@ -73,6 +73,48 @@ class Game {
     this.wire();
     this.refresh();
     requestAnimationFrame(this.frame);
+  }
+
+  /**
+   * Resume the board exactly where it was left, if the save still refers to
+   * this level and seed. Anything mismatched or malformed is ignored rather
+   * than repaired — a wrong board is far worse than a fresh one.
+   */
+  private restoreOrFresh(): GameState {
+    const saved = this.prefs.inProgress;
+    const level = this.currentLevel;
+    if (
+      saved &&
+      saved.levelId === level.id &&
+      saved.seed === this.seed &&
+      Array.isArray(saved.jewels) &&
+      saved.jewels.length === level.target.length
+    ) {
+      try {
+        return hydrate(level, saved.jewels, saved.shelf ?? [], saved.moves ?? 0);
+      } catch {
+        /* fall through to a fresh board */
+      }
+    }
+    return stateFrom(this.generated);
+  }
+
+  /** Snapshot the live board so a crash or a swipe-away costs nothing. */
+  private persistBoard(): void {
+    const s = this.state;
+    const finished = status(s) === 'won';
+    this.prefs = saveProgress(
+      this.prefs,
+      finished || s.moves === 0
+        ? null
+        : {
+            levelId: s.level.id,
+            seed: this.seed,
+            jewels: [...s.jewels],
+            shelf: [...s.shelf],
+            moves: s.moves,
+          },
+    );
   }
 
   private build(index: number, seed: number): GeneratedLevel {
@@ -126,6 +168,23 @@ class Game {
     this.canvas.addEventListener('pointercancel', () => {
       downAt = null;
     });
+
+    // Returning from another app can leave cached canvas pixels blank, and can
+    // also suspend audio. Rebuild both on the way back in.
+    const revive = (): void => {
+      if (document.visibilityState !== 'visible') return;
+      this.renderer.invalidateSprites();
+      if (this.prefs.sound) this.sfx.unlock();
+    };
+    // Backgrounding is the most likely moment to be killed, so snapshot there
+    // too — not only after each move.
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') this.persistBoard();
+    });
+    window.addEventListener('pagehide', () => this.persistBoard());
+    document.addEventListener('visibilitychange', revive);
+    window.addEventListener('pageshow', revive);
+    window.addEventListener('focus', revive);
 
     window.addEventListener('keydown', (e) => {
       if (e.key === 'z' && (e.metaKey || e.ctrlKey)) {
@@ -265,6 +324,7 @@ class Game {
       setTimeout(() => this.sfx.chime(), 220);
     }
     this.refresh();
+    this.persistBoard();
     return true;
   }
 
@@ -277,6 +337,7 @@ class Game {
     this.selection = null;
     this.hideOverlay();
     this.refresh();
+    this.persistBoard();
   }
 
   private hint(): void {
@@ -334,6 +395,9 @@ class Game {
     save(this.prefs);
     this.hideOverlay();
     this.refresh();
+    // Switching pictures abandons the old board deliberately; do not leave a
+    // stale snapshot that would resurrect it later.
+    this.persistBoard();
   }
 
   private refresh(): void {
