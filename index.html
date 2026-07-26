@@ -39,6 +39,16 @@
         touch-action: manipulation;
       }
       body {
+        /*
+         * Pinned to the viewport rather than laid out in normal flow. A
+         * document that cannot grow cannot push the tray off screen — which is
+         * the failure this defends against, whatever the cause turns out to be.
+         * `height: 100%` alone leaves the page free to expand if any descendant
+         * reports a larger size, and on an installed PWA there is no browser
+         * chrome to make that obvious until the tray has already gone.
+         */
+        position: fixed;
+        inset: 0;
         background: radial-gradient(120% 80% at 50% 0%, #2a2547 0%, #171528 62%);
         display: flex;
         flex-direction: column;
@@ -54,7 +64,24 @@
       }
       #title { font-weight: 650; letter-spacing: 0.01em; }
       #stats { margin-left: auto; color: var(--muted); font-variant-numeric: tabular-nums; font-size: 13px; }
-      #canvas { flex: 1 1 auto; width: 100%; display: block; touch-action: none; }
+      /*
+       * The canvas is taken out of flow on purpose. Its width/height
+       * ATTRIBUTES are its intrinsic size, so as a normal flex item it feeds
+       * its own measured size back into layout: measure clientHeight, write a
+       * rounded pixel size, intrinsic size grows, flex box grows, measure
+       * again. That creeps a pixel at a time until the tray walks off screen.
+       * Absolute positioning inside a relative stage breaks the loop — the
+       * canvas can no longer influence the box it is measuring.
+       */
+      #stage { flex: 1 1 auto; position: relative; min-height: 0; width: 100%; }
+      #canvas {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+        touch-action: none;
+      }
       footer {
         display: flex;
         gap: 8px;
@@ -156,7 +183,7 @@
       <span id="title">Jewel Swap</span>
       <span id="stats"></span>
     </header>
-    <canvas id="canvas" aria-label="Puzzle board"></canvas>
+    <div id="stage"><canvas id="canvas" aria-label="Puzzle board"></canvas></div>
     <footer>
       <button id="undo" title="Undo the last move">Undo</button>
       <button id="hint" title="Show a move that leads to a win">Hint</button>

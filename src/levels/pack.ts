@@ -1,4 +1,409 @@
 import type { ArtSpec } from '../gen/art';
 
-/** Placeholder — replaced by the authored pack. */
-export const PACK: readonly ArtSpec[] = [];
+/**
+ * A hand-authored level pack, sized and coloured for deliberate variety on
+ * top of the originals in `index.ts` and any auto-converted art from
+ * `scripts/image-to-level.ts`. Hand authoring earns its keep over the
+ * pipeline precisely here: colour *ratio* is the game's main difficulty
+ * lever, and a human can place it on purpose rather than inherit whatever a
+ * source photo happened to have.
+ *
+ * - Size: several small (10–12 wide), several medium (14–16), several large
+ *   (18–20), a couple extra-large (22–24).
+ * - Colour count: 3 up to 7–8.
+ * - Colour ratio, chosen per level rather than left to accident:
+ *   - balanced — every colour within a couple of percent of the others, so
+ *     no colour finishes early and the shelf stays cramped the whole board
+ *     (harder).
+ *   - skewed — one dominant colour plus a genuinely tiny 3–8 cell accent
+ *     that clears out almost immediately and pays back shelf room early
+ *     (easier).
+ */
+export const PACK: readonly ArtSpec[] = [
+  // ============================== small (10-12 wide) ==============================
+  {
+    id: 'gem',
+    name: 'Gem',
+    // balanced: b 26% / n 39% / c 22% / w 13% — spread, not lopsided.
+    colours: { b: '#3f6fd9', n: '#1f3a6b', c: '#7fd8f0', w: '#fdfdf6' },
+    rows: [
+      '..ccwwnn..',
+      '.ccccwwnn.',
+      'bbccwwnnnn',
+      'bbbccwnnnn',
+      '.bbbccnnn.',
+      '..bbbnnn..',
+      '...bbnn...',
+      '....bn....',
+    ],
+  },
+  {
+    id: 'pinwheel',
+    name: 'Pinwheel',
+    // balanced: r 20% / y 20% / b 30% / g 30% — four blades, near-equal.
+    colours: { r: '#d93a30', y: '#ffd23f', b: '#3f6fd9', g: '#4caf50' },
+    rows: [
+      'rrrr...yyyy',
+      '.rrr...yyy.',
+      '..rr...yy..',
+      '...r...y...',
+      '...........',
+      'bbb.....ggg',
+      '.bb.....gg.',
+      '...........',
+      '...g...b...',
+      '..gg...bb..',
+      '.ggg...bbb.',
+      'gggg...bbbb',
+    ],
+  },
+  {
+    id: 'shield',
+    name: 'Shield',
+    // balanced: b 38% / w 36% / g 27% — three even bands.
+    colours: { b: '#3f6fd9', w: '#fdfdf6', g: '#d4af37' },
+    rows: [
+      '..bbbbbbbb..',
+      '.bbbbbbbbbb.',
+      'bbbbbbbbbbbb',
+      'bbbwwwwwwbbb',
+      'bwwwwwwwwwwb',
+      'wwwwggggwwww',
+      'wwwggggggwww',
+      '.wwgggggww..',
+      '..wggggw....',
+      '...gggg.....',
+      '....gg......',
+      '....gg......',
+    ],
+  },
+  {
+    id: 'cherry',
+    name: 'Cherries',
+    // skewed: R 53% dominant, s 30% stem, l 5 cells (leaf accent).
+    colours: { R: '#c8102e', s: '#5c3a1e', l: '#3a8f3a' },
+    rows: [
+      '..lll.....',
+      '...ll.....',
+      '....s.....',
+      '....s.....',
+      '....s.....',
+      '...ss.....',
+      '..ss.ss...',
+      '.R.....R..',
+      'RRR...RRR.',
+      'RRR...RRR.',
+      '.R.....R..',
+    ],
+  },
+  {
+    id: 'apple',
+    name: 'Apple',
+    // skewed: r 48% / y 38% two-tone body, g 7 cells / s 4 cells tiny accents.
+    colours: { r: '#d93a30', y: '#ffc531', g: '#4caf50', s: '#6b4423' },
+    rows: [
+      '....ggg....',
+      '...gggg....',
+      '.....ss....',
+      '.....ss....',
+      '..rrrryyy..',
+      '.rrrrryyyy.',
+      'rrrrrryyyyy',
+      'rrrrrryyyyy',
+      'rrrrrryyyyy',
+      '.rrrrryyyy.',
+      '..rrrryyy..',
+      '...rrryy...',
+    ],
+  },
+  {
+    id: 'donut',
+    name: 'Donut',
+    // skewed: p 54% dominant icing, d 37% dough, b 4 cells / c 3 cells sprinkles.
+    colours: { d: '#e8b878', p: '#ff6b9d', c: '#6b3a20', b: '#3fc7f4' },
+    rows: [
+      '..dddddd..',
+      '.dppppppd.',
+      'dpbpppcppd',
+      'dppppbpppd',
+      'dpcpppbppd',
+      'dppppppppd',
+      'dpppcpppbd',
+      '.dpppppd..',
+      '..dddddd..',
+      '...dddd...',
+    ],
+  },
+
+  // ============================== medium (14-16 wide) ==============================
+  {
+    id: 'banana',
+    name: 'Banana',
+    // skewed: y 52% body dominant, t 32% tip, d 16% unripe fleck.
+    colours: { y: '#ffd23f', t: '#3a2a1a', d: '#6b7f3a' },
+    rows: [
+      '.........tt.......',
+      '........tddy......',
+      '.......tdyyty.....',
+      '......dyytyyy.....',
+      '.....dyytyyyt.....',
+      '....dyytyyyt......',
+      '...dyytyyyt.......',
+      '..dyytyyyt........',
+      '.dyytyyyt.........',
+      'dtyyyyt...........',
+      'dttyt.............',
+      'dttt..............',
+    ],
+  },
+  {
+    id: 'cat',
+    name: 'Cat',
+    // skewed: o 51% fur dominant, w 20% chest, k 26% stripes, p 4 cells nose.
+    colours: { o: '#f5a623', w: '#fdfdf6', p: '#ff6b9d', k: '#2b2b2b' },
+    rows: [
+      'k.............k',
+      'kk...........kk',
+      'oko.....k...oko',
+      '.ooookk.k.kooo.',
+      '.ookoookkokooo.',
+      '.okoookookoooo.',
+      '.oookkoookokoo.',
+      '.oowwwwwwwwoko.',
+      '.owwppppwwwooo.',
+      '.owwwkkwwwoooo.',
+      '.ookwwwwwwokoo.',
+      '..ooookkooko...',
+    ],
+  },
+  {
+    id: 'icecream',
+    name: 'Ice Cream',
+    // skewed: p 52% scoop dominant, w 32% vanilla, t 15% cone, r 1 cell cherry.
+    colours: { t: '#cf9b57', p: '#ff8bab', w: '#fdfdf6', r: '#d9302c' },
+    rows: [
+      '......r.........',
+      '....ppppppp.....',
+      '...ppppppppp....',
+      '..ppppppppppp...',
+      '.ppppppwwppppp..',
+      '.ppppwwwwwwppp..',
+      '.wwpppwwwpppww..',
+      '..wwppwwwppww...',
+      '...wwwwwwwww....',
+      '....ttwwwtt.....',
+      '.....tttttt.....',
+      '......tttt......',
+      '.......tt.......',
+    ],
+  },
+  {
+    id: 'pizza',
+    name: 'Pizza',
+    // balanced-leaning: y 43% / c 25% / p 19% / g 13%, r 1 cell sauce peek.
+    colours: { c: '#a0622a', y: '#ffd23f', r: '#e8382c', p: '#6b1f1f', g: '#4caf50' },
+    rows: [
+      '....cccccccc....',
+      '..ccyyyyggyycc..',
+      '.cyyyrgppyyyyyc.',
+      'cppyyyggppyyyyyc',
+      'cyygpppyygpyyyyc',
+      'cyyyppgyypppyygc',
+      'cgpyyyppyygppyyc',
+      'cyyppgyygppyypyc',
+      'cyyggyyppyyggyyc',
+      '..cyppyggyppyc..',
+      '..ccyyyyggyycc..',
+      '....cccccccc....',
+    ],
+  },
+  {
+    id: 'sailboat',
+    name: 'Sailboat',
+    // balanced: w 37% / h 25% / b 19% / m 18%, r 1 cell flag.
+    colours: { h: '#8a5a2b', w: '#fdfdf6', m: '#3a2a2a', b: '#3f6fd9', r: '#d93a30' },
+    rows: [
+      '.......rm......',
+      '......wwm......',
+      '.....wwwm......',
+      '....wwwwm.mm...',
+      '...wwwwwm.mmm..',
+      '..wwwwwwm.mmmm.',
+      '.wwwwwwwm......',
+      'wwwwwwwwm......',
+      'hhhhhhhhhhhhhh.',
+      'bbhhhhhhhhhhbbb',
+      '.bbbbbbbbbbbbb.',
+    ],
+  },
+  {
+    id: 'owl',
+    name: 'Owl',
+    // skewed: b 52% body dominant, c 15% / d 12% / k 10% / y 9%, o 3 cells beak.
+    colours: { b: '#8f5622', c: '#eef2f5', y: '#ffd23f', k: '#1a1410', d: '#46586b', o: '#ff5f14' },
+    rows: [
+      '..dd......dd...',
+      '.ddbbb..bbbdd..',
+      'ddbbbbbbbbbbdd.',
+      'bbbbbbbbbbbbbb.',
+      'bbyyykkbkkyyybb',
+      'bbyykkkbkkkyybb',
+      'bbbykkbbbkkybbb',
+      'bbbbb.ooo.bbbbb',
+      'bbccccccccccbb.',
+      '.bccccccccccb..',
+      '..bb.dd.dd.bb..',
+    ],
+  },
+
+  // ============================== large (18-20 wide) ==============================
+  {
+    id: 'butterfly',
+    name: 'Butterfly',
+    // balanced: u 28% / y 28% / p 23% / k 17% across the four majors, c/w tiny spots.
+    colours: { u: '#8a3fa0', p: '#ff6b9d', y: '#ffd23f', k: '#2b2b2b', c: '#3fc7f4', w: '#fdfdf6' },
+    rows: [
+      '.......k....k.......',
+      '......kk....kk......',
+      '.....uuuk..kuuu.....',
+      '...uuuuuk..kuuuuu...',
+      '.uuucuuuukkuuuucuuu.',
+      'uuupppuuukkuuupppuuu',
+      'ppppwppppkkppppwpppp',
+      'pppyyypppkkpppyyyppp',
+      '.yyycyyyykkyyyycyyy.',
+      '..yyyyyyk..kyyyyyy..',
+      '...yyyyk....kyyyy...',
+      '.....yk......ky.....',
+    ],
+  },
+  {
+    id: 'watermelon',
+    name: 'Watermelon',
+    // skewed: r 55% flesh dominant, l 20% / w 13% rind, g 10 / k 9 cells rind & seeds.
+    colours: { g: '#1f5c24', l: '#6bbf59', r: '#e8453c', k: '#2b2b2b', w: '#fdfdf6' },
+    rows: [
+      '..................',
+      '....glllwwlllg....',
+      '...llwrrrrrrwll...',
+      '..lwrrrrrrrrrrwl..',
+      '.gwrrrkrrkrrrrrwg.',
+      '.lwrkrrrrrrkrrrwl.',
+      'glrrrrrrkrrrrrrrlg',
+      '.lwrrrrkrrrrrrrwl.',
+      '.gwrrrrkrrrrrrrwg.',
+      '..lwrrrrkrrrrrwl..',
+      '...llwrrrrrkwll...',
+      '....glllwwlllg....',
+      '..................',
+    ],
+  },
+  {
+    id: 'fox',
+    name: 'Fox',
+    // balanced-leaning: o 50% / c 30% / w 12% / k 5%, b 6 / p 2 cells tiny accents.
+    colours: { o: '#e8752c', w: '#fdfdf6', k: '#2b2b2b', p: '#ff6b9d', b: '#8a4a1e', c: '#e8c078' },
+    rows: [
+      '....ko........ok....',
+      '...okoo......ooko...',
+      '..oooooooooooooooo..',
+      '.oooooooooooooooooo.',
+      'oooooooooooooooooooo',
+      '..oooooooooooooooo..',
+      '.oocobbboooobbbocoo.',
+      '.occcokkwwwwkkoccco.',
+      '.ccccckkwwwwkkccccc.',
+      '.cccccwwwwwwwwccccc.',
+      '.cccccwwwppwwwccccc.',
+      '..cccowwccccwwoccc..',
+      '...coooccccccoooc...',
+      '....oooccccccooo....',
+      '......ooccccoo......',
+    ],
+  },
+  {
+    id: 'rainbow',
+    name: 'Rainbow Cloud',
+    // balanced-leaning: w 38% cloud / r 27% / o 20%, y 9 / g 5 / b 4 cells thin bands.
+    colours: { r: '#d93a30', o: '#ff8a1e', y: '#ffd23f', g: '#4caf50', b: '#3f6fd9', w: '#fdfdf6' },
+    rows: [
+      '...................',
+      '...................',
+      '...................',
+      '......rrrrrrr......',
+      '....rrrrooorrrr....',
+      '...rrooooooooorr...',
+      '..rrooyyyyyyyoorr..',
+      '.rrooyygggggyyoorr.',
+      '.rooywwwbbbbwwwoor.',
+      'rrowwwwwwwwwwwwwwrr',
+      'rowwwwwwwwwwwwwwwwr',
+      'rowwwwwwwwwwwwwwwwr',
+    ],
+  },
+
+  // ============================== extra-large (22-24 wide) ==============================
+  {
+    id: 'alien',
+    name: 'UFO Visitor',
+    // balanced-leaning: b 40% beam / u 20% / s 18% / d 15%, g 7 / y 6 / k 2 cells tiny.
+    colours: { u: '#7c8698', d: '#7fd8f0', y: '#ffd23f', b: '#ff6bd6', g: '#4caf50', k: '#2b2b2b', s: '#4a1f6b' },
+    rows: [
+      '.......................',
+      '.........ddddd.........',
+      '........ddddddd........',
+      '.......dddgggddd.......',
+      '.......dddkgkddd.......',
+      '.......dddgggddd.......',
+      '...uuuuuuuuuuuuuuuuu...',
+      '.uuuuuuuuuuuuuuuuuuuuu.',
+      '.ssyssyssyssyssyssysss.',
+      '..sssssssssssssssssss..',
+      '.........bbsbb.........',
+      '.......bbbbbbbbb.......',
+      '......bbbbbbbbbbb......',
+      '....bbbbbbbbbbbbbbb....',
+      '...bbbbbbbbbbbbbbbbb...',
+      '.bbbbbbbbbbbbbbbbbbbbb.',
+    ],
+  },
+  {
+    id: 'peacock',
+    name: 'Peacock',
+    // balanced: t 30% / b 25% / f 16% / g 12% / k 9%, p 5 / w 2 / o 1 cells tiny.
+    colours: {
+      t: '#1f8a7a',
+      b: '#3f6fd9',
+      f: '#4caf50',
+      g: '#d4af37',
+      k: '#2b2b2b',
+      p: '#8a3fa0',
+      o: '#ff8a1e',
+      w: '#fdfdf6',
+    },
+    rows: [
+      '..........pppp..........',
+      '..........pppp..........',
+      '..........pppp..........',
+      '..........tttt..........',
+      '..........twwt..........',
+      '.........ttkwtt.........',
+      '..........twwt..........',
+      '..........toot..........',
+      '..........tttt..........',
+      '.........tttttt.........',
+      '.........tttttt.........',
+      '........tttttttt........',
+      '........tttttttt........',
+      'bb......tttttttt......bb',
+      'bbb......tttttt......bbb',
+      'bbbff....tttttt....fbbbb',
+      'ggffff.b..tttt..b.ffbggg',
+      'kfffffbbbbfttfbbbfffbgkk',
+      'kffggbbbbbffffbbbffbbgkk',
+      'gfgkkbgggffggbbggfgbbbgg',
+      'bfgkbbgkkfgkkbbkkfgkbbbb',
+      'bffgbbgkkfgkkbbkkffgbbbb',
+    ],
+  },
+];

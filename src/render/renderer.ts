@@ -313,11 +313,22 @@ export class Renderer {
 
   private computeLayout(): Layout {
     const dpr = window.devicePixelRatio || 1;
-    const cssW = this.canvas.clientWidth;
-    const cssH = this.canvas.clientHeight;
-    if (this.canvas.width !== cssW * dpr || this.canvas.height !== cssH * dpr) {
-      this.canvas.width = Math.round(cssW * dpr);
-      this.canvas.height = Math.round(cssH * dpr);
+    // Measure the stage, never the canvas. Reading a box you also write to is
+    // how the runaway-height bug happened; the stage is laid out by flex alone.
+    const stage = this.canvas.parentElement ?? this.canvas;
+    // Third guard, and the one that holds even if the DOM misbehaves: never
+    // lay out a board taller than the window can show, no matter what the
+    // element claims its height is. The shelf is drawn relative to `cssH`, so
+    // an inflated value is precisely what walks it off the bottom of the screen.
+    const limitH = Math.max(1, Math.floor(window.visualViewport?.height ?? window.innerHeight));
+    const cssW = Math.max(1, Math.min(Math.floor(stage.clientWidth), window.innerWidth));
+    const cssH = Math.max(1, Math.min(Math.floor(stage.clientHeight), limitH));
+
+    const wantW = Math.round(cssW * dpr);
+    const wantH = Math.round(cssH * dpr);
+    if (this.canvas.width !== wantW || this.canvas.height !== wantH) {
+      this.canvas.width = wantW;
+      this.canvas.height = wantH;
     }
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
@@ -446,6 +457,9 @@ export class Renderer {
     const { level } = this.state;
     const { cell } = l.board;
     const gap = winT > 0 ? cell * 0.06 * (1 - easeInOutQuad(winT)) : cell * 0.06;
+    // Lifted jewels are drawn in a second pass. Painted inline, the very next
+    // cell would overdraw the shadow that makes them look raised.
+    const raised: (() => void)[] = [];
 
     for (let i = 0; i < level.target.length; i++) {
       const target = level.target[i];
@@ -479,18 +493,24 @@ export class Renderer {
         if (this.symbols === 'on') this.drawGlyph(x + cell / 2, y + cell / 2, cell * 0.4, target, 0.45);
       } else {
         const shim = this.shimmerAmount(now, jewel, cx);
-        const held =
-          this.selection !== null && !this.selection.onShelf && this.selection.cells.has(i)
-            ? 0.1
-            : 0;
-        this.drawJewel(
-          x + cell / 2,
-          y + cell / 2,
-          cell * (winT > 0 ? 1 - gap / cell : 0.78),
-          jewel,
-          1 + shim * 0.3 + held,
-          shim * 0.72,
-        );
+        // Picked-up jewels physically rise off the board rather than merely
+        // being outlined. Size and shadow are what read as "in hand" on a
+        // phone; an outline is something you have to notice and decode.
+        const picked =
+          this.selection !== null && !this.selection.onShelf && this.selection.cells.has(i);
+        const breathe = picked ? 0.03 * Math.sin(now / 320) : 0;
+        const paint = (): void =>
+          this.drawJewel(
+            x + cell / 2,
+            y + cell / 2,
+            cell * (winT > 0 ? 1 - gap / cell : 0.78),
+            jewel,
+            1 + shim * 0.3 + (picked ? 0.3 : 0) + breathe,
+            shim * 0.72,
+            picked ? cell * 0.34 : 0,
+          );
+        if (picked) raised.push(paint);
+        else paint();
         if (shim > 0.02) {
           this.ctx.save();
           this.ctx.globalAlpha = shim * 0.85;
@@ -529,14 +549,14 @@ export class Renderer {
         this.ctx.restore();
       }
 
-      // Mint, not white: white is a palette colour in several pictures, and a
-      // white selection ring is invisible against a white jewel.
+      // The lifted jewel now carries the message, so the socket outline is a
+      // faint confirmation rather than the signal itself. Kept, not dropped:
+      // it is the only cue that survives when a picked jewel sits next to a
+      // same-coloured one, and size alone would be ambiguous there.
       if (this.selection && !this.selection.onShelf && this.selection.cells.has(i)) {
         this.ctx.save();
-        this.ctx.shadowColor = ACCENT;
-        this.ctx.shadowBlur = cell * 0.4;
-        this.ctx.strokeStyle = `rgba(123,224,192,${0.8 + pulse * 0.2})`;
-        this.ctx.lineWidth = Math.max(2.5, cell * 0.13);
+        this.ctx.strokeStyle = `rgba(123,224,192,${0.26 + pulse * 0.14})`;
+        this.ctx.lineWidth = Math.max(1, cell * 0.05);
         this.roundRect(x + gap / 2, y + gap / 2, cell - gap, cell - gap, cell * 0.22);
         this.ctx.stroke();
         this.ctx.restore();
@@ -549,6 +569,8 @@ export class Renderer {
         this.ctx.stroke();
       }
     }
+
+    for (const paint of raised) paint();
   }
 
   /**
@@ -740,12 +762,19 @@ export class Renderer {
     colour: ColourId,
     scale: number,
     flash = 0,
+    lift = 0,
   ): void {
     const ctx = this.ctx;
     const hex = this.state.level.palette[colour] as string;
     const r = (size * scale) / 2;
 
     ctx.save();
+    if (lift > 0) {
+      // A cast shadow below-right is what sells "hovering above the board".
+      ctx.shadowColor = 'rgba(0,0,0,0.55)';
+      ctx.shadowBlur = lift;
+      ctx.shadowOffsetY = lift * 0.34;
+    }
     ctx.beginPath();
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
     const grad = ctx.createLinearGradient(cx, cy - r, cx, cy + r);
@@ -754,6 +783,10 @@ export class Renderer {
     grad.addColorStop(1, shade(hex, -0.26));
     ctx.fillStyle = grad;
     ctx.fill();
+
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
 
     // A single specular blob reads as "glass" far more cheaply than a bevel.
     ctx.clip();
