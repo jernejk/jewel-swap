@@ -1,5 +1,8 @@
 # Jewel Swap — POC Plan
 
+> Kept as written, before any code existed. The build diverged from it in
+> places; the README describes what actually shipped.
+
 A calm colour-permutation puzzle dressed as diamond painting. Clone of the verified
 "Jewel Coloring" loop (pkg `color.number.paint.pixle.art.sort.jigsaw`), keeping the
 mechanic, deliberately dropping the monetisation funnel, and improving on it.

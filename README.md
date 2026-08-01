@@ -1,16 +1,24 @@
 # Jewel Swap
 
+**[Play it →](https://jewel-swap.vercel.app)**
+
 A calm colour-permutation puzzle dressed as diamond painting — the loop from
 *Jewel Coloring* (TaTa Game Technology, 10M+ installs), kept intact and stripped
 of the free-to-play funnel. No ads, no timers, no energy, no purchasable shelf
 slots. Undo, hints and restarts are free and unlimited.
 
+TypeScript and Canvas 2D, **zero runtime dependencies**, installable as an
+offline PWA. 105 levels, every one certified solvable by the bundled solver
+before it ships — that certification is an actual test, one per level.
+
+![The board at level start](docs/screenshots/board.png)
+
 ```bash
 npm install
 npm run dev        # http://localhost:5173
-npm test           # 22 unit tests
-npm run e2e        # 25 e2e tests across Android / iPad / desktop
-npm run build      # → dist/  (37 kB, 13 kB gzipped)
+npm test           # 322 unit tests
+npm run e2e        # 60 e2e tests across Android / iPad / desktop
+npm run build      # → dist/  (81 kB, 24 kB gzipped)
 ```
 
 ## Getting it onto a phone or iPad
@@ -74,6 +82,8 @@ Play is **select, then choose the destination**:
 - **Win** when every jewel sits on its own colour. Finished pictures are kept in
   the **gallery**; unsolved ones show only as a silhouette, so the reveal is the
   reward rather than something you can flick through in advance.
+
+![A batch on the shelf, with the sockets it vacated showing as recesses](docs/screenshots/destinations.png)
 
 Jewels are **round** on **square** sockets, so a circle never covers its cell:
 the target colour always frames it. Matching turns the frame invisible, which is
@@ -169,6 +179,8 @@ colour — mismatches read as a glyph clash, and "no badge" means correct. Also:
 `prefers-reduced-motion` honoured, keyboard shortcuts (`h` hint, `r` restart,
 ⌘Z undo), and no colour-alone signalling anywhere.
 
+![Shapes mode: a glyph per colour, plus a corner badge for the socket's target](docs/screenshots/shapes-mode.png)
+
 ## Platforms
 
 One codebase. Android Chrome, iPad Safari and desktop, installable to the home
@@ -225,12 +237,37 @@ Playwright's WebKit has no service worker support, so the offline test skips on
 the iPad profile. Real iPad Safari does support them; that is a limitation of
 the test browser, not the app.
 
+## How this was built
+
+Written end-to-end with AI agents, and `docs/` keeps the paper trail rather than
+tidying it away:
+
+| File | What it is |
+|---|---|
+| [`docs/PLAN.md`](docs/PLAN.md) | The up-front plan, written before any code. The `window.__game` test hook was a plan decision, not a debug afterthought — it is what lets Playwright play a level to completion instead of pixel-poking. |
+| [`docs/brief-sol.md`](docs/brief-sol.md) | The brief handed to a second model for UI critique and level artwork, scoped to `art/` and `shots/` so it could run alongside an agent editing `src/`. |
+| [`docs/brief-design-review.md`](docs/brief-design-review.md) | A narrower review-only brief: read three screenshots, rank what is ugly, touch nothing. |
+| [`docs/ui-critique.md`](docs/ui-critique.md) | What came back, and most of it shipped (commit `cde0947`): empty sockets became recesses instead of reading as solid tiles, the gallery dropped two unexplained encodings, and the header went from `101 left · shelf 0/12 · 0 moves` to `0/3 colours solved` — the old line quietly rewarded buffering jewels onto the shelf, which is not progress. |
+
+The briefs point at `shots/*.png`, which is a gitignored scratch directory —
+`npm run e2e` regenerates it. Three of those shots are copied into
+`docs/screenshots/` for this README.
+
+The parts that needed a human were taste calls and one factual correction: the
+critique described the wrong batch as selected in a screenshot, which is the
+reminder that a model reading a picture can be confidently wrong about it.
+
 ## Not done yet
 
 Pinch-zoom and pan (unnecessary at 16×16, needed for larger art) · bring-your-own
 image via the generator in a Worker · PNG/GIF export of the reveal · seed-share
-URLs · difficulty calibration against real play · PNG icons (currently SVG, which
-iOS may ignore for home-screen icons) · screen-reader grid.
+URLs · difficulty calibration against real play · screen-reader grid.
 
 `allowLiftCorrect` is wired through the core but defaults to off, so correctly
-seated jewels can never be disturbed. Worth playtesting both — see PLAN.md §8.
+seated jewels can never be disturbed. Worth playtesting both — see
+[`docs/PLAN.md`](docs/PLAN.md) §8.
+
+## Licence
+
+[MIT](LICENSE). *Jewel Coloring* is TaTa Game Technology's game; this is an
+independent reimplementation of its mechanic, sharing no code or assets with it.

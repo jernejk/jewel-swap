@@ -1,6 +1,6 @@
 # Brief for Sol
 
-You are working in `/Users/jk/Developer/personal/git/games/jewel-swap`.
+You are working in the repo root.
 
 ## The game
 
@@ -20,10 +20,10 @@ instincts about feel are trustworthy. The goal is to scale to **hundreds of leve
 
 Look at these actual screenshots (you can read images — reference them by path):
 
-- `/Users/jk/Developer/personal/git/games/jewel-swap/shots/ui-01-board.png` — the board at level start
-- `/Users/jk/Developer/personal/git/games/jewel-swap/shots/ui-02-selected.png` — a batch selected (mint glow) with the tray offered as a destination
-- `/Users/jk/Developer/personal/git/games/jewel-swap/shots/ui-03-shelf.png` — after the batch moved to the shelf
-- `/Users/jk/Developer/personal/git/games/jewel-swap/shots/gallery.png` — the picture gallery
+- `shots/ui-01-board.png` — the board at level start
+- `shots/ui-02-selected.png` — a batch selected (mint glow) with the tray offered as a destination
+- `shots/ui-03-shelf.png` — after the batch moved to the shelf
+- `shots/gallery.png` — the picture gallery
 
 Write a critique to `art/UI-CRITIQUE.md`. Be specific and opinionated, and prioritise:
 what is genuinely confusing or ugly, versus what is fine. Consider readability of the
@@ -64,9 +64,8 @@ real difficulty lever in this game.
 
 ## Rules
 
-- Work only inside `/Users/jk/Developer/personal/git/games/jewel-swap/art/` and
-  `shots/`. Do not modify `src/`, `tests/`, `package.json`, or anything else — another
-  agent is editing those concurrently.
+- Work only inside `art/` and `shots/`. Do not modify `src/`, `tests/`,
+  `package.json`, or anything else — another agent is editing those concurrently.
 - Do not run `npm install`, do not commit, do not push, do not deploy.
 - Look at each image you generate and regenerate it if it does not match the brief.
 - Finish with a short summary at `art/SOL-REPORT.md`: what you critiqued, what you
