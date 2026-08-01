@@ -4,7 +4,10 @@
   "private": true,
   "description": "A calm colour-permutation puzzle dressed as diamond painting. Ad-free, offline-capable PWA.",
   "license": "MIT",
-  "repository": { "type": "git", "url": "git+https://github.com/jernejk/jewel-swap.git" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jernejk/jewel-swap.git"
+  },
   "homepage": "https://jewel-swap.vercel.app",
   "type": "module",
   "scripts": {
@@ -25,6 +28,7 @@
     "@playwright/test": "^1.49.0",
     "typescript": "^5.7.2",
     "vite": "^6.0.5",
-    "vitest": "^2.1.8"
+    "vite-node": "^6.0.0",
+    "vitest": "^4.1.10"
   }
 }
